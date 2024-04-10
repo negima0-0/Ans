@@ -1,0 +1,12 @@
+https://www.slideshare.net/akira6592/janog42-ansible-networkautomation
+https://tekunabe.hatenablog.jp/entry/2018/09/04/ansible_inventory
+site,hostname,IP,Desc
+kn1,asw1.kn1.test.com,10.10.0.55,kn1-asw1
+kn1,dsw1.kn1.test.com,10.10.0.55,kn1-dsw1
+kn1,gw1.kn1.test.com,10.10.0.55,kn1-gw1
+kn2,asw1.kn2.test.com,10.10.0.55,kn2-asw1
+kn2,dsw1.kn2.test.com,10.10.0.55,kn2-dsw1
+kn2,gw1.kn2.test.com,10.10.0.55,kn2-gw1
+kn3,asw1.kn3.test.com,10.10.0.55,kn3-asw1
+kn3,dsw1.kn3.test.com,10.10.0.55,kn3-dsw1
+kn3,gw1.kn3.test.com,10.10.0.55,kn3-gw1
