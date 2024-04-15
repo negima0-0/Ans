@@ -46,12 +46,17 @@ with open('inventory.ini', 'w') as inv_file:
     for region, sites in regions_sites.items():
         inv_file.write(f"[{region}]\n")
         for site, groups in sites.items():
-            inv_file.write(f"\n[{region}:{site}]\n")
+            site_has_hosts = False  # サイト内に少なくとも1つのグループにホストが存在するかをチェック
+            site_content = []  # サイト内の内容を一時保存するリスト
             for group, hosts in groups.items():
-                if hosts:  # ホストが存在する場合のみグループを作成
-                    inv_file.write(f"\n[{region}:{site}:{group}]\n")
+                if hosts:  # ホストが存在する場合のみグループを追加
+                    site_has_hosts = True
+                    site_content.append(f"\n[{region}:{site}:{group}]\n")
                     for host in hosts:
-                        inv_file.write(f"{host}\n")
+                        site_content.append(f"{host}\n")
+            if site_has_hosts:  # サイトにホストが1つでもあれば、サイトとその内容をファイルに書き込む
+                inv_file.write(f"\n[{region}:{site}]\n")
+                inv_file.writelines(site_content)
     inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
 
-print("インベントリファイル 'inventory.ini' が生成されました。
+print("インベントリファイル 'inventory.ini' が生成されました。")
