@@ -17,12 +17,12 @@ regions_sites = {}
 with open(csv_file_path, newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
-        site = row['site']
-        hostname = row['hostname']
-        ip_address = row['IP_address']
-        device_type = row['device_type']
-        region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
-        region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
+        site = row['site'].strip()
+        hostname = row['hostname'].strip()
+        ip_address = row['IP_address'].strip()
+        device_type = row['device_type'].strip()
+        region_prefix = hostname.split('-')[0][:2].strip()  # 最初の2文字を地域接頭辞として使用
+        region_name = region_mapping.get(region_prefix, 'unknown').strip()  # 対応する地域名がない場合は 'unknown'
 
         # 地域とサイト情報を更新
         if region_name not in regions_sites:
