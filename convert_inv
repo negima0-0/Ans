@@ -7,7 +7,9 @@ csv_file_path = 'hosts.csv'
 hosts_dict = {
     'GW': [],
     'DSW': [],
-    'ASW': []
+    'ASW': [],
+    'SW': [],
+    'RT': []
 }
 
 # サイトごとのホスト情報を保持するディクショナリ
@@ -33,6 +35,10 @@ with open(csv_file_path, newline='') as csvfile:
             hosts_dict['DSW'].append(hostname)
         elif 'asw' in hostname:
             hosts_dict['ASW'].append(hostname)
+        elif 'sw' in hostname and 'dsw' not in hostname and 'asw' not in hostname:
+            hosts_dict['SW'].append(hostname)
+        elif 'rt' in hostname:
+            hosts_dict['RT'].append(hostname)
 
 # インベントリファイルを生成
 with open('inventory.ini', 'w') as inv_file:
