@@ -45,18 +45,22 @@ with open(csv_file_path, newline='') as csvfile:
 with open('inventory.ini', 'w') as inv_file:
     for region, sites in regions_sites.items():
         inv_file.write(f"[{region}]\n")
+        inv_file.write(f"[{region}:children]\n")
+        for site in sites.keys():
+            inv_file.write(f"{site}\n")
+
         for site, groups in sites.items():
-            site_has_hosts = False  # サイト内に少なくとも1つのグループにホストが存在するかをチェック
-            site_content = []  # サイト内の内容を一時保存するリスト
+            inv_file.write(f"\n[{site}]\n")
+            inv_file.write(f"[{site}:children]\n")
+            for group in groups.keys():
+                if groups[group]:  # ホストが存在する場合のみグループを記載
+                    inv_file.write(f"{site}_{group}\n")
+            
             for group, hosts in groups.items():
-                if hosts:  # ホストが存在する場合のみグループを追加
-                    site_has_hosts = True
-                    site_content.append(f"\n[{region}:{site}:{group}]\n")
+                if hosts:
+                    inv_file.write(f"\n[{site}_{group}]\n")
                     for host in hosts:
-                        site_content.append(f"{host}\n")
-            if site_has_hosts:  # サイトにホストが1つでもあれば、サイトとその内容をファイルに書き込む
-                inv_file.write(f"\n[{region}:{site}]\n")
-                inv_file.writelines(site_content)
+                        inv_file.write(f"{host}\n")
     inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
 
 print("インベントリファイル 'inventory.ini' が生成されました。")
