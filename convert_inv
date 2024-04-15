@@ -10,17 +10,8 @@ region_mapping = {
     # 他の地域接頭辞もここに追加可能
 }
 
-# 地域ごとおよび機能ごとのホストリストを保持するディクショナリ
-hosts_dict = {
-    'GW': [],
-    'DSW': [],
-    'ASW': [],
-    'SW': [],
-    'RT': []
-}
-
-# 地域ごとのサイト情報を保持するディクショナリ
-regions_dict = {}
+# 地域ごと、サイトごと、機能ごとのホストリストを保持するディクショナリ
+regions_sites = {}
 
 # CSVファイルを読み込み、データを処理
 with open(csv_file_path, newline='') as csvfile:
@@ -30,41 +21,36 @@ with open(csv_file_path, newline='') as csvfile:
         hostname = row['hostname']
         ip_address = row['IP_address']
         region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
-
-        # 地域名に変換
         region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
 
-        # 地域情報を更新
-        if region_name not in regions_dict:
-            regions_dict[region_name] = []
-        regions_dict[region_name].append(f"{hostname} ansible_host={ip_address}")
-        
+        # 地域とサイト情報を更新
+        if region_name not in regions_sites:
+            regions_sites[region_name] = {}
+        if site not in regions_sites[region_name]:
+            regions_sites[region_name][site] = {'GW': [], 'DSW': [], 'ASW': [], 'SW': [], 'RT': []}
+
         # 機能グループ情報を更新
         if 'gw' in hostname:
-            hosts_dict['GW'].append(hostname)
+            regions_sites[region_name][site]['GW'].append(f"{hostname} ansible_host={ip_address}")
         elif 'dsw' in hostname:
-            hosts_dict['DSW'].append(hostname)
+            regions_sites[region_name][site]['DSW'].append(f"{hostname} ansible_host={ip_address}")
         elif 'asw' in hostname:
-            hosts_dict['ASW'].append(hostname)
-        elif 'sw' in hostname and 'dsw' not in hostname and 'asw' not in hostname:
-            hosts_dict['SW'].append(hostname)
+            regions_sites[region_name][site]['ASW'].append(f"{hostname} ansible_host={ip_address}")
+        elif 'sw' in hostname:
+            regions_sites[region_name][site]['SW'].append(f"{hostname} ansible_host={ip_address}")
         elif 'rt' in hostname:
-            hosts_dict['RT'].append(hostname)
+            regions_sites[region_name][site]['RT'].append(f"{hostname} ansible_host={ip_address}")
 
 # インベントリファイルを生成
 with open('inventory.ini', 'w') as inv_file:
-    for region, hosts in regions_dict.items():
+    for region, sites in regions_sites.items():
         inv_file.write(f"[{region}]\n")
-        for host in hosts:
-            inv_file.write(f"{host}\n")
-        inv_file.write("\n")
-
-    for group, hosts in hosts_dict.items():
-        inv_file.write(f"[{group}]\n")
-        for host in hosts:
-            inv_file.write(f"{host}\n")
-        inv_file.write("\n")
-    
-    inv_file.write("[all:vars]\nansible_connection=network_cli\n")
+        for site, groups in sites.items():
+            inv_file.write(f"\n[{region}:{site}]\n")
+            for group, hosts in groups.items():
+                inv_file.write(f"\n[{region}:{site}:{group}]\n")
+                for host in hosts:
+                    inv_file.write(f"{host}\n")
+    inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
 
 print("インベントリファイル 'inventory.ini' が生成されました。")
