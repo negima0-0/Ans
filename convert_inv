@@ -20,6 +20,7 @@ with open(csv_file_path, newline='') as csvfile:
         site = row['site']
         hostname = row['hostname']
         ip_address = row['IP_address']
+        device_type = row['device_type']
         region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
         region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
 
@@ -27,19 +28,13 @@ with open(csv_file_path, newline='') as csvfile:
         if region_name not in regions_sites:
             regions_sites[region_name] = {}
         if site not in regions_sites[region_name]:
-            regions_sites[region_name][site] = {'GW': [], 'DSW': [], 'ASW': [], 'SW': [], 'RT': []}
-
+            regions_sites[region_name][site] = {}
+        
         # 機能グループ情報を更新
-        if 'gw' in hostname:
-            regions_sites[region_name][site]['GW'].append(f"{hostname} ansible_host={ip_address}")
-        elif 'dsw' in hostname:
-            regions_sites[region_name][site]['DSW'].append(f"{hostname} ansible_host={ip_address}")
-        elif 'asw' in hostname:
-            regions_sites[region_name][site]['ASW'].append(f"{hostname} ansible_host={ip_address}")
-        elif 'sw' in hostname:
-            regions_sites[region_name][site]['SW'].append(f"{hostname} ansible_host={ip_address}")
-        elif 'rt' in hostname:
-            regions_sites[region_name][site]['RT'].append(f"{hostname} ansible_host={ip_address}")
+        group_key = f"{site}_{device_type}"
+        if group_key not in regions_sites[region_name][site]:
+            regions_sites[region_name][site][group_key] = []
+        regions_sites[region_name][site][group_key].append(f"{hostname} ansible_host={ip_address}")
 
 # インベントリファイルを生成
 with open('inventory.ini', 'w') as inv_file:
@@ -53,14 +48,12 @@ with open('inventory.ini', 'w') as inv_file:
             inv_file.write(f"\n[{site}]\n")
             inv_file.write(f"[{site}:children]\n")
             for group in groups.keys():
-                if groups[group]:  # ホストが存在する場合のみグループを記載
-                    inv_file.write(f"{site}_{group}\n")
+                inv_file.write(f"{group}\n")
             
             for group, hosts in groups.items():
-                if hosts:
-                    inv_file.write(f"\n[{site}_{group}]\n")
-                    for host in hosts:
-                        inv_file.write(f"{host}\n")
+                inv_file.write(f"\n[{group}]\n")
+                for host in hosts:
+                    inv_file.write(f"{host}\n")
     inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
 
 print("インベントリファイル 'inventory.ini' が生成されました。")
