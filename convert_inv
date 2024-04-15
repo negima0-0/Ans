@@ -32,7 +32,12 @@ with open(csv_file_path, newline='') as csvfile:
             regions_sites[region_name][site] = {}
 
         # 機能とデバイスタイプごとにグループ情報を更新
-        group_key = f"{site}_{function}_{device_type}"
+        # VOIPデバイスは独自のグループに分類
+        if 'voip' in hostname:
+            group_key = f"{site}_VOIP"
+        else:
+            group_key = f"{site}_{function}_{device_type}"
+        
         if group_key not in regions_sites[region_name][site]:
             regions_sites[region_name][site][group_key] = []
         regions_sites[region_name][site][group_key].append(f"{hostname} ansible_host={ip_address}")
