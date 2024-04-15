@@ -3,7 +3,14 @@ import csv
 # CSVファイルパス
 csv_file_path = 'hosts.csv'
 
-# グループごとのホストリストを保持するディクショナリ
+# 接頭辞と地域名の対応表
+region_mapping = {
+    'kn': 'kanagawa',
+    'mg': 'miyagi'
+    # 他の地域接頭辞もここに追加可能
+}
+
+# 地域ごとおよび機能ごとのホストリストを保持するディクショナリ
 hosts_dict = {
     'GW': [],
     'DSW': [],
@@ -12,8 +19,8 @@ hosts_dict = {
     'RT': []
 }
 
-# サイトごとのホスト情報を保持するディクショナリ
-sites_dict = {}
+# 地域ごとのサイト情報を保持するディクショナリ
+regions_dict = {}
 
 # CSVファイルを読み込み、データを処理
 with open(csv_file_path, newline='') as csvfile:
@@ -22,13 +29,17 @@ with open(csv_file_path, newline='') as csvfile:
         site = row['site']
         hostname = row['hostname']
         ip_address = row['IP_address']
+        region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
+
+        # 地域名に変換
+        region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
+
+        # 地域情報を更新
+        if region_name not in regions_dict:
+            regions_dict[region_name] = []
+        regions_dict[region_name].append(f"{hostname} ansible_host={ip_address}")
         
-        # サイト情報を更新
-        if site not in sites_dict:
-            sites_dict[site] = []
-        sites_dict[site].append(f"{hostname} ansible_host={ip_address}")
-        
-        # グループ情報を更新
+        # 機能グループ情報を更新
         if 'gw' in hostname:
             hosts_dict['GW'].append(hostname)
         elif 'dsw' in hostname:
@@ -42,12 +53,12 @@ with open(csv_file_path, newline='') as csvfile:
 
 # インベントリファイルを生成
 with open('inventory.ini', 'w') as inv_file:
-    for site, hosts in sites_dict.items():
-        inv_file.write(f"[{site}]\n")
+    for region, hosts in regions_dict.items():
+        inv_file.write(f"[{region}]\n")
         for host in hosts:
             inv_file.write(f"{host}\n")
         inv_file.write("\n")
-    
+
     for group, hosts in hosts_dict.items():
         inv_file.write(f"[{group}]\n")
         for host in hosts:
