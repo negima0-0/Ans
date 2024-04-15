@@ -20,6 +20,7 @@ with open(csv_file_path, newline='') as csvfile:
         site = row['site']
         hostname = row['hostname']
         ip_address = row['IP_address']
+        device_type = row['device_type']
         region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
         region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
 
@@ -29,7 +30,7 @@ with open(csv_file_path, newline='') as csvfile:
         if site not in regions_sites[region_name]:
             regions_sites[region_name][site] = {}
 
-        # グループ分けのロジック
+        # ホスト名からグループを決定
         if 'voip' in hostname:
             group_key = 'VOIP'
         elif 'sw' in hostname and 'asw' not in hostname and 'dsw' not in hostname:
@@ -44,6 +45,9 @@ with open(csv_file_path, newline='') as csvfile:
             group_key = 'RT'
         else:
             group_key = 'Others'  # どのカテゴリにも当てはまらない場合
+
+        # デバイスタイプをグループ化のキーに追加
+        group_key = f"{group_key}_{device_type}"
 
         # グループにホストを追加
         if group_key not in regions_sites[region_name][site]:
@@ -62,10 +66,10 @@ with open('inventory.ini', 'w') as inv_file:
             inv_file.write(f"\n[{site}]\n")
             inv_file.write(f"[{site}:children]\n")
             for group in groups.keys():
-                inv_file.write(f"{site}_{group}\n")
+                inv_file.write(f"{group}\n")
             
             for group, hosts in groups.items():
-                inv_file.write(f"\n[{site}_{group}]\n")
+                inv_file.write(f"\n[{group}]\n")
                 for host in hosts:
                     inv_file.write(f"{host}\n")
     inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
