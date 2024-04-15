@@ -10,7 +10,7 @@ region_mapping = {
     # 他の地域接頭辞もここに追加可能
 }
 
-# 地域ごと、サイトごと、機能ごとのホストリストを保持するディクショナリ
+# 地域ごと、サイトごと、機能ごと、デバイスタイプごとのホストリストを保持するディクショナリ
 regions_sites = {}
 
 # CSVファイルを読み込み、データを処理
@@ -21,6 +21,7 @@ with open(csv_file_path, newline='') as csvfile:
         hostname = row['hostname']
         ip_address = row['IP_address']
         device_type = row['device_type']
+        function = row['function']  # これは 'GW', 'ASW' などの機能を表す
         region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
         region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
 
@@ -29,9 +30,9 @@ with open(csv_file_path, newline='') as csvfile:
             regions_sites[region_name] = {}
         if site not in regions_sites[region_name]:
             regions_sites[region_name][site] = {}
-        
-        # 機能グループ情報を更新
-        group_key = f"{site}_{device_type}"
+
+        # 機能とデバイスタイプごとにグループ情報を更新
+        group_key = f"{site}_{function}_{device_type}"
         if group_key not in regions_sites[region_name][site]:
             regions_sites[region_name][site][group_key] = []
         regions_sites[region_name][site][group_key].append(f"{hostname} ansible_host={ip_address}")
