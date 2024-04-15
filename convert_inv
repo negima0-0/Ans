@@ -10,7 +10,7 @@ region_mapping = {
     # 他の地域接頭辞もここに追加可能
 }
 
-# 地域ごと、サイトごと、機能ごと、デバイスタイプごとのホストリストを保持するディクショナリ
+# 地域ごと、サイトごとのホストリストを保持するディクショナリ
 regions_sites = {}
 
 # CSVファイルを読み込み、データを処理
@@ -20,8 +20,6 @@ with open(csv_file_path, newline='') as csvfile:
         site = row['site']
         hostname = row['hostname']
         ip_address = row['IP_address']
-        device_type = row['device_type']
-        function = row['function']  # これは 'GW', 'ASW' などの機能を表す
         region_prefix = hostname.split('-')[0][:2]  # 最初の2文字を地域接頭辞として使用
         region_name = region_mapping.get(region_prefix, 'unknown')  # 対応する地域名がない場合は 'unknown'
 
@@ -31,13 +29,23 @@ with open(csv_file_path, newline='') as csvfile:
         if site not in regions_sites[region_name]:
             regions_sites[region_name][site] = {}
 
-        # 機能とデバイスタイプごとにグループ情報を更新
-        # VOIPデバイスは独自のグループに分類
+        # グループ分けのロジック
         if 'voip' in hostname:
-            group_key = f"{site}_VOIP"
+            group_key = 'VOIP'
+        elif 'sw' in hostname and 'asw' not in hostname and 'dsw' not in hostname:
+            group_key = 'SW'
+        elif 'gw' in hostname and 'voip' not in hostname:
+            group_key = 'GW'
+        elif 'asw' in hostname:
+            group_key = 'ASW'
+        elif 'dsw' in hostname:
+            group_key = 'DSW'
+        elif 'rt' in hostname:
+            group_key = 'RT'
         else:
-            group_key = f"{site}_{function}_{device_type}"
-        
+            group_key = 'Others'  # どのカテゴリにも当てはまらない場合
+
+        # グループにホストを追加
         if group_key not in regions_sites[region_name][site]:
             regions_sites[region_name][site][group_key] = []
         regions_sites[region_name][site][group_key].append(f"{hostname} ansible_host={ip_address}")
@@ -54,10 +62,10 @@ with open('inventory.ini', 'w') as inv_file:
             inv_file.write(f"\n[{site}]\n")
             inv_file.write(f"[{site}:children]\n")
             for group in groups.keys():
-                inv_file.write(f"{group}\n")
+                inv_file.write(f"{site}_{group}\n")
             
             for group, hosts in groups.items():
-                inv_file.write(f"\n[{group}]\n")
+                inv_file.write(f"\n[{site}_{group}]\n")
                 for host in hosts:
                     inv_file.write(f"{host}\n")
     inv_file.write("\n[all:vars]\nansible_connection=network_cli\n")
